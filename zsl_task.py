@@ -24,8 +24,7 @@ def main():
 
     # Accuracy # TODO: Compute accuracy
 
-    #correct_prediction = tf.equal(tf.argmax(L_tr_oh, 1), tf.argmax(S_corr, 1))
-    #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
     # Define optimizer
 
     #learning_rate = 0.001     # TODO: decaying learning rate
