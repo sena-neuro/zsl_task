@@ -5,7 +5,7 @@ def get_data(filename):
     f = h5py.File(filename)
     dset_list = {}
     for dsetname, dset in f.iteritems():
-        dset_list[dsetname] = dset.value.astype(np.float32).T  # Changed here by looking at Bulent's code, T is transpose
+        dset_list[dsetname] = dset.value.astype(np.float32).T
     return dset_list
 
 """
