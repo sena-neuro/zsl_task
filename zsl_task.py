@@ -1,10 +1,10 @@
 import tensorflow as tf
-import load_data_test as ld
+import utils as ut
 import numpy as np
 
 def main():
     # Import data
-    dataset = ld.get_training_data('gbu_CUB_data.mat')
+    dataset = ut.get_training_data('gbu_CUB_data.mat')
 
     # Create the model
     m = 100
@@ -22,24 +22,34 @@ def main():
     L_tr_oh_dual = tf.ones([m, 100]) - L_tr_oh
     loss = tf.add(loss_temp, L_tr_oh_dual)
 
+    # Accuracy # TODO: Compute accuracy
+
+    #correct_prediction = tf.equal(tf.argmax(L_tr_oh, 1), tf.argmax(S_corr, 1))
+    #accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     # Define optimizer
-    learning_rate = 0.001     # TODO: decaying learning rate
-    optimizer = tf.train.AdamOptimizer(learning_rate)
+
+    #learning_rate = 0.001     # TODO: decaying learning rate
+    # Decaying learning rate but might not be necessary
     global_step = tf.Variable(0, name='global_step', trainable=False)
+    starter_learning_rate = 0.1
+    learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
+                                               1000, 0.96, staircase=True)
+    optimizer = tf.train.AdamOptimizer(learning_rate)
     train_op = optimizer.minimize(loss, global_step=global_step)
 
     with tf.Session() as sess:
         tf.global_variables_initializer().run()
 
         feed_dict = {}
-        for _ in range(1000):
-            batch_X_tr, batch_L_tr_oh = ld.next_batch(100, dataset['Xtr'], dataset['Ltr_oh'])
+        for i in range(10000):
+            batch_X_tr, batch_L_tr_oh = ut.next_batch(100, dataset['Xtr'], dataset['Ltr_oh'])
             Str_gt = dataset['Str_gt']
 
-            sess.run(train_op, feed_dict={X_tr: batch_X_tr, S_gt: Str_gt, L_tr_oh: batch_L_tr_oh})
+            # to get loss i changed below line
+            _, loss_cur = sess.run([train_op, loss], feed_dict={X_tr: batch_X_tr, S_gt: Str_gt, L_tr_oh: batch_L_tr_oh})
+            if i % 100 == 0:
+                print 'current loss = %s' % loss_cur
 
-    # TODO: Compute accuracy
-        print(sess.run(W))
 
 main()
 
