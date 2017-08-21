@@ -1,7 +1,7 @@
 import h5py
 import numpy as np
 
-def get_training_data(filename):
+def get_data(filename):
     f = h5py.File(filename)
     dset_list = {}
     for dsetname, dset in f.iteritems():
