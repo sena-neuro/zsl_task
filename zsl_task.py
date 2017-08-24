@@ -59,8 +59,6 @@ def main():
             if i % 10 == 0:
                 print 'Batch no = {0}, current loss = {1}, Current training accuracy = {2},' \
                       ' current validation accuracy = {3}'.format(i,loss_cur,train_acc,val_acc)
-                print lr
-
 
 main()
 
