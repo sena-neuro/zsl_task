@@ -3,7 +3,7 @@ import numpy as np
 
 
 def get_data(filename):
-    f = h5py.File(filename)
+    f = h5py.File(filename,"r")
     dset_list = {}
     for dsetname, dset in f.iteritems():
         dset_list[dsetname] = dset.value.astype(np.float32).T
@@ -23,4 +23,3 @@ def next_batch(num, data, labels):
     labels_shuffle = [labels[i][:] for i in idx]
 
     return np.asarray(data_shuffle), np.asarray(labels_shuffle)
-

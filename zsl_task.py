@@ -57,8 +57,8 @@ def main():
 
             # to get loss i changed below line
             _, loss_cur = sess.run([train_op, loss], feed_dict={X_tr: batch_X_tr, S_gt: dataset['Str_gt'], L_tr_oh: batch_L_tr_oh})
-            #if i % 10 == 0:
-            #    print 'current loss = %s' % loss_cur
+            if i % 10 == 0:
+                print 'current loss = %s' % loss_cur
 
         accuracy = calculate_accuracy(S_va_corr, L_va_oh)
 
