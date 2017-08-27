@@ -2,7 +2,6 @@ import tensorflow as tf
 import utils as ut
 import numpy as np
 
-# train()
 
 def calculate_accuracy(preds, labels):
     correct_predictions = tf.equal(tf.argmax(labels, 1), tf.argmax(preds, 1))
@@ -28,7 +27,6 @@ def main():
     max_scores = tf.maximum(loss_matrix, tf.zeros_like(loss_matrix))
     unregularized_loss = tf.reduce_mean(tf.reduce_sum(max_scores))
 
-
     # Regularization
     reg_constant = tf.placeholder(tf.float32)
     l2_loss = reg_constant * tf.nn.l2_loss(W)
@@ -37,7 +35,6 @@ def main():
     loss = tf.add(unregularized_loss,l2_loss)
 
     # Define optimizer
-
     global_step = tf.Variable(0, name='global_step', trainable=False)
     starter_learning_rate = 0.001
     learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
