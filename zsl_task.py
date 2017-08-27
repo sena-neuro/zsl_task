@@ -52,7 +52,7 @@ def main():
             batch_X_tr, batch_L_tr_oh = ut.next_batch(100, dataset['Xtr'], dataset['Ltr_oh'])
 
             # to get loss i changed below line
-            _, loss_cur, train_acc,L2loss = sess.run([train_op, loss, accuracy, l2_loss],
+            _, loss_cur, train_acc = sess.run([train_op, loss, accuracy, l2_loss],
                                               feed_dict={X: batch_X_tr, S_gt: dataset['Str_gt'],
                                                          L_oh: batch_L_tr_oh, reg_constant: 3})
 
@@ -60,7 +60,7 @@ def main():
                 feed_dict={X: dataset['Xva'], L_oh: dataset['Lva_oh'], S_gt: dataset['Sva_gt']})
             if i % 10 == 0:
                 print 'Batch no = {0}, current loss = {1}, Current training accuracy = {2},' \
-                      ' current validation accuracy = {3}, reg loss: {4}'.format(i,loss_cur,train_acc,val_acc, L2loss)
+                      ' current validation accuracy = {3}'.format(i,loss_cur,train_acc,val_acc)
 
         fin_val_acc = accuracy.eval(
             feed_dict={X: dataset['Xva'], L_oh: dataset['Lva_oh'], S_gt: dataset['Sva_gt']})
