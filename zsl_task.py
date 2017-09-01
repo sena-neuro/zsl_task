@@ -98,7 +98,7 @@ def main():
                     }
                 )
 
-                print 'Iter: {0:05}, loss = {1:09.5f}, acc_tr = {2:0.4f}, acc_va = {2:0.4f}' .format(
+                print 'Iter: {0:05}, loss = {1:09.5f}, acc_tr = {2:0.4f}, acc_va = {3:0.4f}' .format(
                     it, _unregLoss, tr_acc, va_acc)
 
 main()

@@ -1,5 +1,6 @@
 import h5py
 import numpy as np
+import os
 
 
 def get_data(filename):
