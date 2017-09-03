@@ -2,7 +2,7 @@ import os
 import tensorflow as tf
 import utils as ut
 import numpy as np
-def main():
+def main(reg_consts,learning_rates,n_iters):
 
     # directory for summaries
     summaries_dir = "/home/huseyin/Work/Ml/Projects/zsl_task/summaries"
@@ -21,6 +21,7 @@ def main():
         L_oh = tf.placeholder(tf.float32, [None, None], name='one-hot_labels')                         # Labels one hot encoded
         S_gt = tf.placeholder(tf.float32, [None, 312], name='class_embeddings')                          # Ground Truth for test attributes
         reg_constant = tf.placeholder(tf.float32, [], name='regularization_constant')
+        starting_learning_rate = tf.placeholder(tf.float32,name = "starting_learning_rate")
 
     with tf.name_scope("Model"):
         """
@@ -56,9 +57,8 @@ def main():
     #         Tune deceleration on validation set
     with tf.name_scope("Optimizer"):
         global_step = tf.Variable(0, name='global_step', trainable=False)
-        starter_learning_rate = 0.001
-        learning_rate = tf.train.exponential_decay(starter_learning_rate, global_step,
-                                                   500, 0.996, staircase=True)
+        learning_rate = tf.train.exponential_decay(starting_learning_rate, global_step,
+                                                   1000, 0.996, staircase=True)
         optimizer = tf.train.AdamOptimizer(learning_rate)
 
     # Training step
@@ -76,48 +76,62 @@ def main():
     # Bulent: Measuring loss of a batch of samples right after processing them does not
     #         reflect the truth. Its good practice to evaluate the model after predefined time
     #         intervals, i.e. epochs.
-    n_iters = 100000
     summary_op = tf.summary.merge_all()
     with tf.Session() as sess:
         tf.global_variables_initializer().run()
         train_writer = tf.summary.FileWriter(summaries_dir + '/test', graph=tf.get_default_graph())
         val_writer = tf.summary.FileWriter(summaries_dir + '/val', graph=tf.get_default_graph())
-        for it in xrange(1, n_iters + 1):
-            batch_X_tr, batch_L_tr_oh = ut.next_batch(100, dset['Xtr'], dset['Ltr_oh'])
-            sess.run(
-                [train_op],
+        results = []
+        for i in range(learning_rates.size):
+            for it in xrange(1, n_iters + 1):
+                batch_X_tr, batch_L_tr_oh = ut.next_batch(100, dset['Xtr'], dset['Ltr_oh'])
+                sess.run(
+                    [train_op],
+                    {
+                        X: batch_X_tr,
+                        L_oh: batch_L_tr_oh,
+                        S_gt: dset['Str_gt'],
+                        reg_constant: reg_consts[i],
+                        starting_learning_rate: learning_rates[i]
+                    }
+                )
+                # evaluate model once in a while
+                if it % 1000 == 0:
+                    tr_acc, _unreg_train_Loss,summ_train = sess.run(
+                        [accuracy, unregularized_loss,summary_op],
+                        {
+                            X: dset['Xtr'],
+                            L_oh: dset['Ltr_oh'],
+                            S_gt: dset['Str_gt'],
+                            starting_learning_rate: learning_rates[i]
+                        }
+                    )
+
+                    va_acc,_unreg_val_Loss, summ_val = sess.run(
+                        [accuracy, unregularized_loss,summary_op],
+                        {
+                            X: dset['Xva'],
+                            L_oh: dset['Lva_oh'],
+                            S_gt: dset['Sva_gt'],
+                            starting_learning_rate: learning_rates[i]
+                        }
+                    )
+                    print 'Iter: {0:05}, loss_tr = {1:09.5f}, acc_tr = {2:0.4f}, loss_va = {3:09.5f}, acc_va = {4:0.4f}' \
+                        .format(it, _unreg_train_Loss, tr_acc, _unreg_val_Loss, va_acc)
+
+                    train_writer.add_summary(summ_train,global_step=it)
+                    val_writer.add_summary(summ_val,global_step=it)
+                train_writer.close()
+                val_writer.close()
+
+            # Final accuracy for this setting
+            va_acc, _unreg_val_Loss = sess.run(
+                [accuracy, unregularized_loss],
                 {
-                    X: batch_X_tr, 
-                    L_oh: batch_L_tr_oh, 
-                    S_gt: dset['Str_gt'],
-                    reg_constant: 1e-4
+                    X: dset['Xva'],
+                    L_oh: dset['Lva_oh'],
+                    S_gt: dset['Sva_gt']
                 }
             )
-
-            # evaluate model once in a while
-            if it % 100 == 0:
-                tr_acc, _unregLoss,summ_train = sess.run(
-                    [accuracy, unregularized_loss,summary_op],
-                    {
-                        X: dset['Xtr'],
-                        L_oh: dset['Ltr_oh'],
-                        S_gt: dset['Str_gt']
-                    }
-                )
-
-                va_acc, summ_val = sess.run(
-                    [accuracy, summary_op],
-                    {
-                        X: dset['Xva'],
-                        L_oh: dset['Lva_oh'],
-                        S_gt: dset['Sva_gt']
-                    }
-                )
-                print 'Iter: {0:05}, loss = {1:09.5f}, acc_tr = {2:0.4f}, acc_va = {3:0.4f}' .format(
-                    it, _unregLoss, tr_acc, va_acc)
-                train_writer.add_summary(summ_train,global_step=it)
-                val_writer.add_summary(summ_val,global_step=it)
-    train_writer.close()
-    val_writer.close()
-main()
-
+            results.append([learning_rates[i],reg_consts[i],va_acc,_unreg_val_Loss])
+        return results
