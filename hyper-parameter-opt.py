@@ -4,7 +4,7 @@ import csv
 
 learning_rates = 10 ** np.random.uniform(-6, -1, size=10)
 reg_const = 10 ** np.random.uniform(-6, -3, size = 10)
-iterations = 1000 # for fast calculation may change later
+iterations = 100000
 
 results_dir = "/home/huseyin/Work/Ml/Projects/zsl_task"
 

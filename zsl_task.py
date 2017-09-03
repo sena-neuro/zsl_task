@@ -27,25 +27,17 @@ def main(reg_consts,learning_rates,n_iters):
     with tf.name_scope("Variables"):
         '''Variables'''
         # Hidden RELU layer 1
-        bias_1 = tf.Variable(tf.zeros([2048]))
-        weights_1 = tf.get_variable("weights_1", shape=([2048, 2048]),
+        bias_1 = tf.Variable(tf.zeros([1024]))
+        weights_1 = tf.get_variable("weights_1", shape=([2048, 1024]),
                                     initializer=tf.contrib.layers.xavier_initializer())
         # Hidden RELU layer 1
-        bias_2 = tf.Variable(tf.zeros([1024]))
-        weights_2 = tf.get_variable("weights_2", shape=([2048, 1024]),
+        bias_2 = tf.Variable(tf.zeros([512]))
+        weights_2 = tf.get_variable("weights_2", shape=([1024, 512]),
                                     initializer=tf.contrib.layers.xavier_initializer())
 
         # Hidden RELU layer 1
-        bias_3 = tf.Variable(tf.zeros([1024]))
-        weights_3 = tf.get_variable("weights_3", shape=([1024, 1024]),
-                                    initializer=tf.contrib.layers.xavier_initializer())
-        # Hidden RELU layer 1
-        bias_4= tf.Variable(tf.zeros([512]))
-        weights_4 = tf.get_variable("weights_4", shape=([1024, 512]),
-                                    initializer=tf.contrib.layers.xavier_initializer())
-        # Hidden RELU layer 1
-        bias_5 = tf.Variable(tf.zeros([312]))
-        weights_5 = tf.get_variable("weights_5", shape=([512, 312]),
+        bias_3 = tf.Variable(tf.zeros([312]))
+        weights_3 = tf.get_variable("weights_3", shape=([512, 312]),
                                     initializer=tf.contrib.layers.xavier_initializer())
 
     with tf.name_scope("Model"):
@@ -63,8 +55,6 @@ def main(reg_consts,learning_rates,n_iters):
        '''
         '''Training computation'''
 
-        # TODO: consider dropout in only one layer
-
         # Hidden RELU layer 1
         logits_1 = tf.matmul(X, weights_1) + bias_1
         hidden_layer_1 = tf.nn.relu(logits_1)
@@ -75,18 +65,8 @@ def main(reg_consts,learning_rates,n_iters):
         hidden_layer_2 = tf.nn.relu(logits_2)
         hidden_layer_2_dropout = tf.nn.dropout(hidden_layer_2, drop_out_constant)
 
-        # Hidden RELU layer 3
-        logits_3 = tf.matmul(hidden_layer_2_dropout, weights_3) + bias_3
-        hidden_layer_3 = tf.nn.relu(logits_3)
-        hidden_layer_3_dropout = tf.nn.dropout(hidden_layer_3, drop_out_constant)
-
-        # Hidden RELU layer 4
-        logits_4 = tf.matmul(hidden_layer_3_dropout, weights_4) + bias_4
-        hidden_layer_4 = tf.nn.relu(logits_4)
-        hidden_layer_4_dropout = tf.nn.dropout(hidden_layer_4, drop_out_constant)
-
         # Output layer
-        S_guess = tf.matmul(hidden_layer_4_dropout, weights_5) + bias_5  # should i not relu
+        S_guess = tf.matmul(hidden_layer_2_dropout, weights_3) + bias_3  # should i not relu
         S_corr = tf.matmul(S_guess, tf.transpose(S_gt))
 
         # Add Weights to summary
@@ -107,6 +87,7 @@ def main(reg_consts,learning_rates,n_iters):
 
         # Loss
         loss = tf.add(unregularized_loss, regularizers)
+        tf.summary.scalar("loss", unregularized_loss)
 
     # Define optimizer
     # Bulent: Ive never seen a learning rate that decreases too rapid,
@@ -141,7 +122,6 @@ def main(reg_consts,learning_rates,n_iters):
         for i in range(learning_rates.size):
             for it in xrange(1, n_iters + 1):
                 batch_X_tr, batch_L_tr_oh = ut.next_batch(100, dset['Xtr'], dset['Ltr_oh'])
-
                 sess.run(
                     [train_op],
                     {
@@ -155,7 +135,7 @@ def main(reg_consts,learning_rates,n_iters):
                 )
                 # evaluate model once in a while
                 if it % 1000 == 0:
-                    tr_acc, _unreg_train_Loss,summ_train = sess.run(
+                    tr_acc, _unreg_train_loss,summ_train = sess.run(
                         [accuracy, unregularized_loss,summary_op],
                         {
                             X: dset['Xtr'],
@@ -176,7 +156,7 @@ def main(reg_consts,learning_rates,n_iters):
                         }
                     )
                     print 'Iter: {0:05}, loss_tr = {1:09.5f}, acc_tr = {2:0.4f}, loss_va = {3:09.5f}, acc_va = {4:0.4f}' \
-                        .format(it, _unreg_train_Loss, tr_acc, _unreg_val_Loss, va_acc)
+                        .format(it, _unreg_train_loss, tr_acc, _unreg_val_Loss, va_acc)
 
                     train_writer.add_summary(summ_train,global_step=it)
                     val_writer.add_summary(summ_val,global_step=it)
