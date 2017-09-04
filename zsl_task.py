@@ -2,7 +2,7 @@ import os
 import tensorflow as tf
 import utils as ut
 import numpy as np
-def main(reg_consts,learning_rates,n_iters):
+def main(reg_consts,learning_rates,n_iters,drop_outs):
 
     # directory for summaries
     summaries_dir = "/home/huseyin/Work/Ml/Projects/zsl_task/summaries"
@@ -41,24 +41,11 @@ def main(reg_consts,learning_rates,n_iters):
                                     initializer=tf.contrib.layers.xavier_initializer())
 
     with tf.name_scope("Model"):
-        '''
-       ################ using contrib.layers ################
-       # TODO batch normalizer
-       h1 = tf.contrib.layers.fully_connected(inputs=X, num_outputs=1024,
-                                              weights_regularizer=tf.contrib.layers.l2_regularizer(reg_constant))
-
-       h2 = tf.contrib.layers.fully_connected(inputs=h1, num_outputs=512,
-                                              weights_regularizer=tf.contrib.layers.l2_regularizer(reg_constant))
-
-       S_guess = tf.contrib.layers.fully_connected(inputs=h2, num_outputs=312,
-                                                   weights_regularizer=tf.contrib.layers.l2_regularizer(reg_constant))
-       '''
-        '''Training computation'''
 
         # Hidden RELU layer 1
         logits_1 = tf.matmul(X, weights_1) + bias_1
         hidden_layer_1 = tf.nn.relu(logits_1)
-        hidden_layer_1_dropout = tf.nn.dropout(hidden_layer_1, drop_out_constant)
+        hidden_layer_1_dropout = tf.nn.dropout(hidden_layer_1, drop_out_constant,)
 
         # Hidden RELU layer 2
         logits_2 = tf.matmul(hidden_layer_1_dropout, weights_2) + bias_2
@@ -130,7 +117,7 @@ def main(reg_consts,learning_rates,n_iters):
                         S_gt: dset['Str_gt'],
                         reg_constant: reg_consts[i],
                         starting_learning_rate: learning_rates[i],
-                        drop_out_constant:0.75
+                        drop_out_constant:drop_outs[i]
                     }
                 )
                 # evaluate model once in a while
@@ -172,5 +159,5 @@ def main(reg_consts,learning_rates,n_iters):
                     drop_out_constant: 1
                 }
             )
-            results.append([learning_rates[i],reg_consts[i],va_acc,_unreg_val_Loss])
+            results.append([learning_rates[i],reg_consts[i],drop_outs[i],va_acc,_unreg_val_Loss])
         return results
