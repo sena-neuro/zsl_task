@@ -2,6 +2,11 @@ import h5py
 import numpy as np
 import os
 import tensorflow as tf
+import math
+
+# Global variables for creating batches
+batch_numbers = []
+batch_is_used = []
 
 
 def get_data(filename):
@@ -11,29 +16,31 @@ def get_data(filename):
         dset_list[dsetname] = dset.value.astype(np.float32).T
     return dset_list
 
-"""
- here we need to batch only Ltr_oh and Xtr 
-"""
+
 def next_batch(num, data, labels):
-    """
-    Return a total of `num` random samples and labels.
-    """
-    idx = np.arange(0, len(data[0]))
-    np.random.shuffle(idx)
-    idx = idx[:num]
-    data_shuffle = [data[i][:] for i in idx]
-    labels_shuffle = [labels[i][:] for i in idx]
 
-    return np.asarray(data_shuffle), np.asarray(labels_shuffle)
+    # For first creation of batch and resetting batches
+    if not False in batch_is_used:
 
-def variable_summaries(var):
-    """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
-    with tf.name_scope('summaries'):
-      mean = tf.reduce_mean(var)
-      tf.summary.scalar('mean', mean)
-      with tf.name_scope('stddev'):
-        stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
-      tf.summary.scalar('stddev', stddev)
-      tf.summary.scalar('max', tf.reduce_max(var))
-      tf.summary.scalar('min', tf.reduce_min(var))
-      tf.summary.histogram('histogram', var)
+        # Finds how many batches possible
+        number_of_batches = int(math.ceil(float(len(data)) / num))
+
+        # Create a list that holds batch numbers and shuffle
+        global batch_numbers
+        batch_numbers = [i for i in xrange(number_of_batches)]
+        np.random.shuffle(batch_numbers)
+
+        # A list to know if the batch is used
+        global batch_is_used
+        batch_is_used = [False] * number_of_batches
+
+    for batch_no in batch_numbers:
+
+        # If the batch_validity[batch_no] = True flag is as used, return it
+        if not batch_is_used[batch_no]:
+
+            # Flag it as used
+            batch_is_used[batch_no] = True
+
+            # Find the indicies and return batch
+            return np.asarray(data[batch_no*num:(batch_no + 1)*num][:]), np.asarray(labels[batch_no*num:(batch_no + 1)*num][:])
