@@ -1,4 +1,3 @@
-import os
 import tensorflow as tf
 import utils as ut
 import numpy as np
@@ -29,7 +28,8 @@ def main(reg_consts, learning_rates, n_iters, drop_outs):
         S_gt = tf.placeholder(tf.float32, [None, 312], name='class_embeddings')
         reg_constant = tf.placeholder(tf.float32, [], name='regularization_constant')
         starting_learning_rate = tf.placeholder(tf.float32, name="starting_learning_rate")
-        drop_out_constant = tf.placeholder(tf.float32,[], name="drop_out_constant")
+        drop_out_constant = tf.placeholder(tf.float32, [], name="drop_out_constant")
+        phase = tf.placeholder(tf.bool, name="phase")
 
     with tf.name_scope("Variables"):
 
@@ -55,12 +55,16 @@ def main(reg_consts, learning_rates, n_iters, drop_outs):
 
         # Hidden RELU layer 1
         logits_1 = tf.matmul(X, weights_1) + bias_1
-        hidden_layer_1 = tf.nn.relu(logits_1)
+        batch_norm_1 =  tf.contrib.layers.batch_norm(logits_1, updates_collections=None,
+                                                     center=True, scale=False, is_training=phase)
+        hidden_layer_1 = tf.nn.relu(batch_norm_1)
         hidden_layer_1_dropout = tf.nn.dropout(hidden_layer_1, drop_out_constant)
 
         # Hidden RELU layer 2
         logits_2 = tf.matmul(hidden_layer_1_dropout, weights_2) + bias_2
-        hidden_layer_2 = tf.nn.relu(logits_2)
+        batch_norm_2 = tf.contrib.layers.batch_norm(logits_2, updates_collections=None,
+                                                    center=True, scale=False, is_training=phase)
+        hidden_layer_2 = tf.nn.relu(batch_norm_2)
         hidden_layer_2_dropout = tf.nn.dropout(hidden_layer_2, drop_out_constant)
 
         # Output layer
@@ -96,7 +100,11 @@ def main(reg_consts, learning_rates, n_iters, drop_outs):
 
     # Training step
     with tf.name_scope("train"):
-        train_op = optimizer.minimize(loss, global_step=global_step)
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            train_op = optimizer.minimize(loss, global_step=global_step)
+
+
 
     # Accuracy
     with tf.name_scope("accuracy"):
@@ -126,20 +134,22 @@ def main(reg_consts, learning_rates, n_iters, drop_outs):
                         S_gt: dset['Str_gt'],
                         reg_constant: reg_consts[i],
                         starting_learning_rate: learning_rates[i],
-                        drop_out_constant:drop_outs[i]
+                        drop_out_constant: drop_outs[i],
+                        phase: True
                     }
                 )
                 
                 # evaluate model once in a while
                 if it % 100 == 0:
                     tr_acc, _unreg_train_loss, summ_train = sess.run(
-                        [accuracy, unregularized_loss,summary_op],
+                        [accuracy, unregularized_loss, summary_op],
                         {
                             X: dset['Xtr'],
                             L_oh: dset['Ltr_oh'],
                             S_gt: dset['Str_gt'],
                             starting_learning_rate: learning_rates[i],
-                            drop_out_constant: 1
+                            drop_out_constant: 1,
+                            phase: False
                         }
                     )
                     va_acc,_unreg_val_Loss, summ_val = sess.run(
@@ -149,7 +159,8 @@ def main(reg_consts, learning_rates, n_iters, drop_outs):
                             L_oh: dset['Lva_oh'],
                             S_gt: dset['Sva_gt'],
                             starting_learning_rate: learning_rates[i],
-                            drop_out_constant: 1
+                            drop_out_constant: 1,
+                            phase: False
                         }
                     )
                     print 'Iter: {0:05}, loss_tr = {1:09.5f}, acc_tr = {2:0.4f}, loss_va = {3:09.5f}, acc_va = {4:0.4f}' \
@@ -167,10 +178,11 @@ def main(reg_consts, learning_rates, n_iters, drop_outs):
                     X: dset['Xva'],
                     L_oh: dset['Lva_oh'],
                     S_gt: dset['Sva_gt'],
-                    drop_out_constant: 1
+                    drop_out_constant: 1,
+                    phase: False
                 }
             )
-            results.append([learning_rates[i],reg_consts[i],drop_outs[i],va_acc,_unreg_val_Loss])
+            results.append([learning_rates[i], reg_consts[i], drop_outs[i], va_acc, _unreg_val_Loss])
         return results
 
-main(np.asarray([1e-3]),np.asarray([1e-3]),np.asarray([10000]),np.asarray([.75]))
+main(np.asarray([1e-3]), np.asarray([1e-3]), np.asarray([50000]), np.asarray([.75]))
