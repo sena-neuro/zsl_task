@@ -18,7 +18,7 @@ def get_data(filename):
 
 
 def next_batch(num, data, labels):
-
+    global batch_is_used
     # For first creation of batch and resetting batches
     if not False in batch_is_used:
 
@@ -31,7 +31,7 @@ def next_batch(num, data, labels):
         np.random.shuffle(batch_numbers)
 
         # A list to know if the batch is used
-        global batch_is_used
+
         batch_is_used = [False] * number_of_batches
 
     for batch_no in batch_numbers:

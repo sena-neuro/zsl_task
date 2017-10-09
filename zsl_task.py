@@ -80,13 +80,13 @@ def main(reg_const, learning_rates, n_iters):
 
         for i in xrange(learning_rates.size):
             for it in xrange(1, n_iters + 1):
-                batch_X, batch_L_oh = ut.next_batch(100, dset['Xtr'], dset['Ltr_oh'])
+                batch_X, batch_L_oh = ut.next_batch(100, dset['Xtrva'], dset['Ltrva_oh'])
                 sess.run(
                     [train_op],
                     {
                         X: batch_X,
                         L_oh: batch_L_oh,
-                        S_gt: dset['Str_gt'],
+                        S_gt: dset['Strva_gt'],
                         reg_constant: reg_const[i],
                         starter_learning_rate: learning_rates[i]
                     }
@@ -97,41 +97,40 @@ def main(reg_const, learning_rates, n_iters):
                     tr_acc, _unregLoss, summ_train = sess.run(
                         [accuracy, unregularized_loss,summary_op],
                         {
-                            X: dset['Xtr'],
-                            L_oh: dset['Ltr_oh'],
-                            S_gt: dset['Str_gt'],
+                            X: dset['Xtrva'],
+                            L_oh: dset['Ltrva_oh'],
+                            S_gt: dset['Strva_gt'],
                             starter_learning_rate: learning_rates[i]
                         }
                     )
                     va_acc, summ_val = sess.run(
                         [accuracy, summary_op],
                         {
-                            X: dset['Xva'],
-                            L_oh: dset['Lva_oh'],
-                            S_gt: dset['Sva_gt'],
+                            X: dset['Xta_unseen'],
+                            L_oh: dset['Lte_unseen_oh'],
+                            S_gt: dset['Ste_unseen_gt'],
                             starter_learning_rate: learning_rates[i]
                         }
                     )
                     print 'Iter: {0:05}, loss = {1:09.5f}, acc_tr = {2:0.4f}, acc_va = {3:0.4f}' .format(
                         it, _unregLoss, tr_acc, va_acc)
-                    train_writer.add_summary(summ_train,global_step=it)
-                    val_writer.add_summary(summ_val,global_step=it)
+                    train_writer.add_summary(summ_train, global_step=it)
+                    val_writer.add_summary(summ_val, global_step=it)
 
             # Final validation accuracy calculation
             va_acc, loss_val = sess.run(
                 [accuracy, unregularized_loss],
                 {
-                    X: dset['Xva'],
-                    L_oh: dset['Lva_oh'],
-                    S_gt: dset['Sva_gt'],
+                    X: dset['Xte_unseen'],
+                    L_oh: dset['Lte_unseen_oh'],
+                    S_gt: dset['Ste_unseen_gt'],
                     starter_learning_rate: learning_rates[i]
                 }
             )
-            
             # Append resulted validation information to results
             results.append([learning_rates[i],reg_const[i],va_acc,loss_val])
         train_writer.close()
         val_writer.close()
         return results
 
-main(np.asarray([5e-3]), np.asarray([1.38e-5]), 100000)
+main(np.asarray([5e-3]), np.asarray([1.38e-5]), 10000)
