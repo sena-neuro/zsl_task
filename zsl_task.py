@@ -11,8 +11,6 @@ purposes.
 
 def main(reg_consts, learning_rates, n_iters, drop_outs):
 
-    # TODO: This main only accepts lists so, this can be frustrating, what to do?
-
     # directory for summaries
     cwd = os.getcwd()
     summaries_dir = cwd + "/summaries"
@@ -33,8 +31,6 @@ def main(reg_consts, learning_rates, n_iters, drop_outs):
 
     with tf.name_scope("Variables"):
 
-        # TODO: Change Xavier init.
-
         # Hidden RELU layer 1
         bias_1 = tf.Variable(tf.zeros([1024]))
         weights_1 = tf.get_variable("weights_1", shape=([2048, 1024]),
@@ -51,7 +47,6 @@ def main(reg_consts, learning_rates, n_iters, drop_outs):
 
     with tf.name_scope("Model"):
 
-        # TODO: Add Batch Norm
 
         # Hidden RELU layer 1
         logits_1 = tf.matmul(X, weights_1) + bias_1
@@ -64,7 +59,7 @@ def main(reg_consts, learning_rates, n_iters, drop_outs):
         hidden_layer_2_dropout = tf.nn.dropout(hidden_layer_2, drop_out_constant)
 
         # Output layer
-        S_guess = tf.matmul(hidden_layer_2_dropout, weights_3) + bias_3  # should i not relu
+        S_guess = tf.matmul(hidden_layer_2_dropout, weights_3) + bias_3
         S_corr = tf.matmul(S_guess, tf.transpose(S_gt))
 
         # Add Weights to summary for tensorboard
@@ -117,13 +112,13 @@ def main(reg_consts, learning_rates, n_iters, drop_outs):
             for it in xrange(1, n_iters + 1):
                 
                 # Sample next batch
-                batch_X, batch_L_oh = ut.next_batch(100, dset['Xtr'], dset['Ltr_oh'])
+                batch_X, batch_L_oh = ut.next_batch(100, dset['Xtrva'], dset['Ltrva_oh'])
                 sess.run(
                     [train_op],
                     {
                         X: batch_X,
                         L_oh: batch_L_oh,
-                        S_gt: dset['Str_gt'],
+                        S_gt: dset['Strva_gt'],
                         reg_constant: reg_consts[i],
                         starting_learning_rate: learning_rates[i],
                         drop_out_constant:drop_outs[i]
@@ -135,42 +130,42 @@ def main(reg_consts, learning_rates, n_iters, drop_outs):
                     tr_acc, _unreg_train_loss, summ_train = sess.run(
                         [accuracy, unregularized_loss,summary_op],
                         {
-                            X: dset['Xtr'],
-                            L_oh: dset['Ltr_oh'],
-                            S_gt: dset['Str_gt'],
+                            X: dset['Xtrva'],
+                            L_oh: dset['Ltrva_oh'],
+                            S_gt: dset['Strva_gt'],
                             starting_learning_rate: learning_rates[i],
                             drop_out_constant: 1
                         }
                     )
-                    va_acc,_unreg_val_Loss, summ_val = sess.run(
-                        [accuracy, unregularized_loss,summary_op],
+                    va_acc, = sess.run(
+                        [accuracy],
                         {
-                            X: dset['Xva'],
-                            L_oh: dset['Lva_oh'],
-                            S_gt: dset['Sva_gt'],
+                            X: dset['Xte_unseen'],
+                            L_oh: dset['Lte_unseen_oh'],
+                            S_gt: dset['Ste_unseen_gt'],
                             starting_learning_rate: learning_rates[i],
                             drop_out_constant: 1
                         }
                     )
-                    print 'Iter: {0:05}, loss_tr = {1:09.5f}, acc_tr = {2:0.4f}, loss_va = {3:09.5f}, acc_va = {4:0.4f}' \
-                        .format(it, _unreg_train_loss, tr_acc, _unreg_val_Loss, va_acc)
+                    print 'Iter: {0:05}, loss_tr = {1:09.5f}, acc_tr = {2:0.4f}, acc_va = {3:0.4f}' \
+                        .format(it, _unreg_train_loss, tr_acc, va_acc)
 
-                    train_writer.add_summary(summ_train,global_step=it)
-                    val_writer.add_summary(summ_val,global_step=it)
+                #    train_writer.add_summary(summ_train,global_step=it)
+                #   val_writer.add_summary(summ_val,global_step=it)
                 train_writer.close()
                 val_writer.close()
             
             # Final accuracy for this setting
-            va_acc, _unreg_val_Loss = sess.run(
-                [accuracy, unregularized_loss],
+            test_acc = sess.run(
+                [accuracy],
                 {
-                    X: dset['Xva'],
-                    L_oh: dset['Lva_oh'],
-                    S_gt: dset['Sva_gt'],
+                    X: dset['Xte_unseen'],
+                    L_oh: dset['Lte_unseen_oh'],
+                    S_gt: dset['Ste_unseen_gt'],
                     drop_out_constant: 1
                 }
             )
-            results.append([learning_rates[i],reg_consts[i],drop_outs[i],va_acc,_unreg_val_Loss])
+            results.append([learning_rates[i],reg_consts[i],drop_outs[i],test_acc])
         return results
 
 main(np.asarray([1e-3]),np.asarray([1e-3]),np.asarray([10000]),np.asarray([.75]))
