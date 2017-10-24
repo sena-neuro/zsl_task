@@ -103,23 +103,22 @@ def main(reg_const, learning_rates, n_iters):
                             starter_learning_rate: learning_rates[i]
                         }
                     )
-                    va_acc, summ_val = sess.run(
-                        [accuracy, summary_op],
+                    va_acc = sess.run(
+                        accuracy,
                         {
-                            X: dset['Xta_unseen'],
+                            X: dset['Xte_unseen'],
                             L_oh: dset['Lte_unseen_oh'],
                             S_gt: dset['Ste_unseen_gt'],
                             starter_learning_rate: learning_rates[i]
                         }
                     )
-                    print 'Iter: {0:05}, loss = {1:09.5f}, acc_tr = {2:0.4f}, acc_va = {3:0.4f}' .format(
-                        it, _unregLoss, tr_acc, va_acc)
+                    print 'Iter: {0:05}, loss = {1:09.5f}, acc_tr = {2:0.4f}, acc_va = {3:0.4f}'.format\
+                        (it, _unregLoss, tr_acc, va_acc)
                     train_writer.add_summary(summ_train, global_step=it)
-                    val_writer.add_summary(summ_val, global_step=it)
 
             # Final validation accuracy calculation
-            va_acc, loss_val = sess.run(
-                [accuracy, unregularized_loss],
+            test_acc = sess.run(
+                accuracy,
                 {
                     X: dset['Xte_unseen'],
                     L_oh: dset['Lte_unseen_oh'],
@@ -128,9 +127,9 @@ def main(reg_const, learning_rates, n_iters):
                 }
             )
             # Append resulted validation information to results
-            results.append([learning_rates[i],reg_const[i],va_acc,loss_val])
+            results.append([learning_rates[i],reg_const[i],test_acc])
         train_writer.close()
         val_writer.close()
         return results
 
-main(np.asarray([5e-3]), np.asarray([1.38e-5]), 10000)
+print(main(np.asarray([5e-3]), np.asarray([1.38e-5]), 20000))
